@@ -26,34 +26,39 @@ using System.Collections.Generic;
 
 public class BoardManager : MonoBehaviour {
 	public static BoardManager instance;
-	public List<Sprite> characters = new List<Sprite>();
-	public GameObject tile;
 	public int xSize, ySize;
 
-	private GameObject[,] tiles;
+	[SerializeField] private List<Sprite> characters;
+	[SerializeField] private GameObject objectTile, boardTile, boardTileContain;
+
+	private GameObject[,] objectTiles, boardTiles;
 
 	public bool IsShifting { get; set; }
 
 	void Start () {
 		instance = GetComponent<BoardManager>();
+		boardTiles = new GameObject[xSize, ySize];
+		objectTiles = new GameObject[xSize, ySize];
 
-		Vector2 offset = tile.GetComponent<SpriteRenderer>().bounds.size;
-        CreateBoard(offset.x, offset.y);
+		//Vector2 offset = objectTile.GetComponent<SpriteRenderer>().bounds.size;
+        CreateBoard();
     }
 
-	private void CreateBoard (float xOffset, float yOffset) {
-		tiles = new GameObject[xSize, ySize];
-
-        float startX = transform.position.x;
-		float startY = transform.position.y;
-
+	private void CreateBoard () 
+	{
 		Sprite[] previousLeft = new Sprite[ySize]; // Add this line
 		Sprite previousBelow = null; // Add this line
 
-		for (int x = 0; x < xSize; x++) {
-			for (int y = 0; y < ySize; y++) {
-				GameObject newTile = Instantiate(tile, new Vector3(startX + (xOffset * x), startY + (yOffset * y), 0), tile.transform.rotation);
-				tiles[x, y] = newTile;
+		for (int x = 0; x < xSize; x++) 
+		{
+			for (int y = 0; y < ySize; y++) 
+			{
+				Vector2 tempPos = new Vector2(x, y);
+
+				GameObject newTile = Instantiate(objectTile, tempPos, objectTile.transform.rotation);
+				GameObject boardTileBG = Instantiate(boardTile, tempPos, Quaternion.identity);
+
+				objectTiles[x, y] = newTile;
 				newTile.transform.parent = transform; // Add this line
 
 				List<Sprite> possibleCharacters = new List<Sprite>();
@@ -66,6 +71,8 @@ public class BoardManager : MonoBehaviour {
 				newTile.GetComponent<SpriteRenderer>().sprite = newSprite;
 				previousLeft[y] = newSprite;
 				previousBelow = newSprite;
+
+				boardTileBG.transform.SetParent(boardTileContain.transform);
 			}
         }
     }
@@ -73,7 +80,7 @@ public class BoardManager : MonoBehaviour {
 	public IEnumerator FindNullTiles() {
 		for (int x = 0; x < xSize; x++) {
 			for (int y = 0; y < ySize; y++) {
-				if (tiles[x, y].GetComponent<SpriteRenderer>().sprite == null) {
+				if (objectTiles[x, y].GetComponent<SpriteRenderer>().sprite == null) {
 					yield return StartCoroutine(ShiftTilesDown(x, y));
 					break;
 				}
@@ -82,7 +89,7 @@ public class BoardManager : MonoBehaviour {
 
 		for (int x = 0; x < xSize; x++) {
 			for (int y = 0; y < ySize; y++) {
-				tiles[x, y].GetComponent<Tile>().ClearAllMatches();
+				objectTiles[x, y].GetComponent<Tile>().ClearAllMatches();
 			}
 		}
 	}
@@ -93,7 +100,7 @@ public class BoardManager : MonoBehaviour {
 		int nullCount = 0;
 
 		for (int y = yStart; y < ySize; y++) {
-			SpriteRenderer render = tiles[x, y].GetComponent<SpriteRenderer>();
+			SpriteRenderer render = objectTiles[x, y].GetComponent<SpriteRenderer>();
 			if (render.sprite == null) {
 				nullCount++;
 			}
@@ -116,13 +123,13 @@ public class BoardManager : MonoBehaviour {
 		possibleCharacters.AddRange(characters);
 
 		if (x > 0) {
-			possibleCharacters.Remove(tiles[x - 1, y].GetComponent<SpriteRenderer>().sprite);
+			possibleCharacters.Remove(objectTiles[x - 1, y].GetComponent<SpriteRenderer>().sprite);
 		}
 		if (x < xSize - 1) {
-			possibleCharacters.Remove(tiles[x + 1, y].GetComponent<SpriteRenderer>().sprite);
+			possibleCharacters.Remove(objectTiles[x + 1, y].GetComponent<SpriteRenderer>().sprite);
 		}
 		if (y > 0) {
-			possibleCharacters.Remove(tiles[x, y - 1].GetComponent<SpriteRenderer>().sprite);
+			possibleCharacters.Remove(objectTiles[x, y - 1].GetComponent<SpriteRenderer>().sprite);
 		}
 
 		return possibleCharacters[Random.Range(0, possibleCharacters.Count)];
