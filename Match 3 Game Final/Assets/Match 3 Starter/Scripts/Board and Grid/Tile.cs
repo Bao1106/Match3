@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Tile : MonoBehaviour {
 	private static Color selectedColor = new Color(.5f, .5f, .5f, 1.0f);
@@ -55,19 +56,50 @@ public class Tile : MonoBehaviour {
 	}
 
 	public void SwapSprite(SpriteRenderer render2) {
-		if (render.sprite == render2.sprite) {
+
+		Vector2 swapTempPos = render.gameObject.transform.position;
+		Vector2 pressTempPos = render2.gameObject.transform.position;
+
+        Vector2 object1 = new Vector2(4f, 4f);
+        Vector2 object2 = new Vector2(4f, 5f);
+        Vector2 object3 = new Vector2(5f, 4f);
+        Vector2 object4 = new Vector2(5f, 5f);
+
+        bool checkPos = BoardManager.instance.blackTile.Any(_ => _.Equals(swapTempPos)) 
+			|| BoardManager.instance.blackTile.Any(_ => _.Equals(pressTempPos));
+
+		Debug.LogError($"swapTempPos: {swapTempPos}");
+		Debug.LogError($"checkPos: {checkPos}");
+
+		if (render.sprite == render2.sprite) 
+		{
 			return;
 		}
 
-		Sprite tempSprite = render2.sprite;
-		render2.sprite = render.sprite;
-		render.sprite = tempSprite;
-		SFXManager.instance.PlaySFX(Clip.Swap);
-		GUIManager.instance.MoveCounter--; // Add this line here
+		if (checkPos)
+        {
+			return;
+        }
+        else if (swapTempPos == object1 || swapTempPos == object2  || swapTempPos == object3 || swapTempPos == object4)
+        {
+            return;
+        }
+        else if (pressTempPos == object1 || pressTempPos == object2 || pressTempPos == object3 || pressTempPos == object4)
+        {
+            return;
+        }
+        else
+        {
+			Sprite tempSprite = render2.sprite;
+			render2.sprite = render.sprite;
+			render.sprite = tempSprite;
+			SFXManager.instance.PlaySFX(Clip.Swap);
+			GUIManager.instance.MoveCounter--; // Add this line here
+		}
 	}
 
 	private GameObject GetAdjacent(Vector2 castDir) {
-		RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir);
+		RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir/*, 1f, BoardManager.instance.layerMask*/);
 		if (hit.collider != null) {
 			return hit.collider.gameObject;
 		}
@@ -85,7 +117,7 @@ public class Tile : MonoBehaviour {
 
 	private List<GameObject> FindMatch(Vector2 castDir) {
 		List<GameObject> matchingTiles = new List<GameObject>();
-		RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir);
+		RaycastHit2D hit = Physics2D.Raycast(transform.position, castDir/*, 1f, BoardManager.instance.layerMask*/);
 		while (hit.collider != null && hit.collider.GetComponent<SpriteRenderer>().sprite == render.sprite) {
 			matchingTiles.Add(hit.collider.gameObject);
 			hit = Physics2D.Raycast(hit.collider.transform.position, castDir);
